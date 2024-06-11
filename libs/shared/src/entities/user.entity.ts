@@ -1,25 +1,13 @@
-import {
-  Column,
-  Entity,
-  ManyToMany,
-  OneToMany,
-  PrimaryGeneratedColumn,
-} from 'typeorm';
-import { ConversationEntity } from './conversation.entity';
+import { UserDto } from 'apps/auth/src/dtos/user.dto';
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
-import { FriendRequestEntity } from './friend-request.entity';
-import { MessageEntity } from './message.entity';
-
-@Entity('user')
+@Entity('users')
 export class UserEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
   @Column()
-  firstName: string;
-
-  @Column()
-  lastName: string;
+  name: string;
 
   @Column({ unique: true })
   email: string;
@@ -27,24 +15,13 @@ export class UserEntity {
   @Column({ select: false })
   password: string;
 
-  @OneToMany(
-    () => FriendRequestEntity,
-    (friendRequestEntity) => friendRequestEntity.creator,
-  )
-  friendRequestCreator: FriendRequestEntity[];
+  toDto(): UserDto {
+    const userDto = new UserDto();
 
-  @OneToMany(
-    () => FriendRequestEntity,
-    (FriendRequestEntity) => FriendRequestEntity.receiver,
-  )
-  friendRequestReceiver: FriendRequestEntity[];
+    userDto.id = this.id;
+    userDto.name = this.name;
+    userDto.email = this.email;
 
-  @ManyToMany(
-    () => ConversationEntity,
-    (conversationEntity) => conversationEntity.users,
-  )
-  conversations: ConversationEntity[];
-
-  @OneToMany(() => MessageEntity, (messageEntity) => messageEntity.user)
-  messages: MessageEntity[];
+    return userDto;
+  }
 }

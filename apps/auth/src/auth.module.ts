@@ -9,10 +9,6 @@ import {
   SharedService,
   UserEntity,
   UsersRepository,
-  FriendRequestsRepository,
-  FriendRequestEntity,
-  ConversationEntity,
-  MessageEntity,
 } from '@app/shared';
 
 import { JwtGuard } from './jwt.guard';
@@ -32,13 +28,7 @@ import { JwtStrategy } from './jwt-strategy';
 
     SharedModule,
     PostgresDBModule,
-
-    TypeOrmModule.forFeature([
-      UserEntity,
-      FriendRequestEntity,
-      ConversationEntity,
-      MessageEntity,
-    ]),
+    TypeOrmModule.forFeature([UserEntity]),
   ],
   controllers: [AuthController],
   providers: [
@@ -55,10 +45,6 @@ import { JwtStrategy } from './jwt-strategy';
     {
       provide: 'SharedServiceInterface',
       useClass: SharedService,
-    },
-    {
-      provide: 'FriendRequestsRepositoryInterface',
-      useClass: FriendRequestsRepository,
     },
   ],
 })
