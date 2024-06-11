@@ -1,24 +1,14 @@
-import {
-  BadRequestException,
-  Body,
-  Controller,
-  Get,
-  Inject,
-  Param,
-  Post,
-  Req,
-  UseGuards,
-  UseInterceptors,
-} from '@nestjs/common';
+import { Body, Controller, Get, Inject, Param, Post } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-
-import { AuthGuard, UserInterceptor, UserRequest } from '@app/shared';
+import { CreateOrderDto } from 'apps/order/src/dtos/create-order.dto';
+import { CreateProductDto } from 'apps/product/src/dtos/create-product.dto';
 
 @Controller()
 export class AppController {
   constructor(
     @Inject('AUTH_SERVICE') private readonly authService: ClientProxy,
-    @Inject('PRESENCE_SERVICE') private readonly presenceService: ClientProxy,
+    @Inject('ORDER_SERVICE') private readonly orderService: ClientProxy,
+    @Inject('PRODUCT_SERVICE') private readonly productService: ClientProxy,
   ) {}
 
   @Get('users')
@@ -28,78 +18,6 @@ export class AppController {
         cmd: 'get-users',
       },
       {},
-    );
-  }
-
-  // Note: This would be done already from the main Facebook App thus simple end point provided to simplify this process.
-  @UseGuards(AuthGuard)
-  @UseInterceptors(UserInterceptor)
-  @Post('add-friend/:friendId')
-  async addFriend(
-    @Req() req: UserRequest,
-    @Param('friendId') friendId: number,
-  ) {
-    if (!req?.user) {
-      throw new BadRequestException();
-    }
-
-    return this.authService.send(
-      {
-        cmd: 'add-friend',
-      },
-      {
-        userId: req.user.id,
-        friendId,
-      },
-    );
-  }
-
-  @UseGuards(AuthGuard)
-  @UseInterceptors(UserInterceptor)
-  @Get('get-friends')
-  async getFriends(@Req() req: UserRequest) {
-    if (!req?.user) {
-      throw new BadRequestException();
-    }
-
-    return this.authService.send(
-      {
-        cmd: 'get-friends',
-      },
-      {
-        userId: req.user.id,
-      },
-    );
-  }
-
-  @UseGuards(AuthGuard)
-  @Get('presence')
-  async getPresence() {
-    return this.presenceService.send(
-      {
-        cmd: 'get-presence',
-      },
-      {},
-    );
-  }
-
-  @Post('auth/register')
-  async register(
-    @Body('firstName') firstName: string,
-    @Body('lastName') lastName: string,
-    @Body('email') email: string,
-    @Body('password') password: string,
-  ) {
-    return this.authService.send(
-      {
-        cmd: 'register',
-      },
-      {
-        firstName,
-        lastName,
-        email,
-        password,
-      },
     );
   }
 
@@ -116,6 +34,33 @@ export class AppController {
         email,
         password,
       },
+    );
+  }
+
+  @Get('products/:id')
+  async getProduct(@Param('id') id: number) {
+    return this.productService.send({ cmd: 'get-product' }, { id });
+  }
+
+  @Post('products')
+  async createProduct(@Body() createProduct: CreateProductDto) {
+    return this.productService.send({ cmd: 'create-product' }, createProduct);
+  }
+
+  @Get('orders/:id')
+  async getOrder(@Param('id') id: number) {
+    return this.orderService.send({ cmd: 'get-order' }, { id });
+  }
+
+  @Post('orders')
+  async createOrder(
+    @Body() createOrder: CreateOrderDto,
+    @Body('userId') userId: number,
+    @Body('productId') productId: number,
+  ) {
+    return this.orderService.send(
+      { cmd: 'create-order' },
+      { createOrder, userId, productId },
     );
   }
 }

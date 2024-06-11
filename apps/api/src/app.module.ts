@@ -8,9 +8,10 @@ import { AppController } from './app.controller';
   imports: [
     SharedModule.registerRmq('AUTH_SERVICE', process.env.RABBITMQ_AUTH_QUEUE),
     SharedModule.registerRmq(
-      'PRESENCE_SERVICE',
-      process.env.RABBITMQ_PRESENCE_QUEUE,
+      'PRODUCT_SERVICE',
+      process.env.RABBITMQ_PRODUCT_QUEUE,
     ),
+    SharedModule.registerRmq('ORDER_SERVICE', process.env.RABBITMQ_ORDER_QUEUE),
   ],
   controllers: [AppController],
 })

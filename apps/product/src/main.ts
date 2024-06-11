@@ -3,20 +3,20 @@ import { NestFactory } from '@nestjs/core';
 
 import { SharedService } from '@app/shared';
 
-import { AuthModule } from './auth.module';
-import { swaggerConfig } from './configs/swagger/swagger.config';
+import { ProductModule } from './product.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AuthModule);
+  const app = await NestFactory.create(ProductModule);
+  app.enableCors();
 
   const configService = app.get(ConfigService);
   const sharedService = app.get(SharedService);
 
-  await swaggerConfig(app, []);
-
-  const queue = configService.get('RABBITMQ_AUTH_QUEUE');
+  const queue = configService.get('RABBITMQ_PRODUCT_QUEUE');
 
   app.connectMicroservice(sharedService.getRmqOptions(queue));
-  app.startAllMicroservices();
+  await app.startAllMicroservices();
+
+  await app.listen(6000);
 }
 bootstrap();

@@ -9,53 +9,54 @@ import { JwtService } from '@nestjs/jwt';
 
 import * as bcrypt from 'bcrypt';
 
-import {
-  FriendRequestEntity,
-  FriendRequestsRepository,
-  UserEntity,
-  UserJwt,
-  UserRepositoryInterface,
-} from '@app/shared';
+import { UserEntity, UserJwt, UserRepositoryInterface } from '@app/shared';
 
 import { ExistingUserDTO } from './dtos/existing-user.dto';
 import { NewUserDTO } from './dtos/new-user.dto';
 import { AuthServiceInterface } from './interfaces/auth.service.interface';
+import { UserDto } from './dtos/user.dto';
 
 @Injectable()
 export class AuthService implements AuthServiceInterface {
   constructor(
     @Inject('UsersRepositoryInterface')
     private readonly usersRepository: UserRepositoryInterface,
-    @Inject('FriendRequestsRepositoryInterface')
-    private readonly friendRequestsRepository: FriendRequestsRepository,
     private readonly jwtService: JwtService,
   ) {}
 
-  async getUsers(): Promise<UserEntity[]> {
-    return await this.usersRepository.findAll();
+  async getUsers(): Promise<UserDto[]> {
+    const users = await this.usersRepository.findAll();
+
+    users.map((user) => user.toDto());
+
+    return users;
   }
 
-  async getUserById(id: number): Promise<UserEntity> {
-    return await this.usersRepository.findOneById(id);
+  async getUserById(id: number): Promise<UserDto> {
+    const user = await this.usersRepository.findOneById(id);
+
+    return user.toDto();
   }
 
   async findByEmail(email: string): Promise<UserEntity> {
     return this.usersRepository.findByCondition({
       where: { email },
-      select: ['id', 'firstName', 'lastName', 'email', 'password'],
+      select: ['id', 'name', 'email', 'password'],
     });
   }
 
-  async findById(id: number): Promise<UserEntity> {
-    return this.usersRepository.findOneById(id);
+  async findById(id: number): Promise<UserDto> {
+    const user = await this.usersRepository.findOneById(id);
+
+    return user.toDto();
   }
 
   async hashPassword(password: string): Promise<string> {
     return bcrypt.hash(password, 12);
   }
 
-  async register(newUser: Readonly<NewUserDTO>): Promise<UserEntity> {
-    const { firstName, lastName, email, password } = newUser;
+  async register(newUser: Readonly<NewUserDTO>): Promise<UserDto> {
+    const { name, email, password } = newUser;
 
     const existingUser = await this.findByEmail(email);
 
@@ -66,14 +67,13 @@ export class AuthService implements AuthServiceInterface {
     const hashedPassword = await this.hashPassword(password);
 
     const savedUser = await this.usersRepository.save({
-      firstName,
-      lastName,
+      name,
       email,
       password: hashedPassword,
     });
 
     delete savedUser.password;
-    return savedUser;
+    return savedUser.toDto();
   }
 
   async doesPasswordMatch(
@@ -136,48 +136,5 @@ export class AuthService implements AuthServiceInterface {
     } catch (error) {
       throw new BadRequestException();
     }
-  }
-
-  async addFriend(
-    userId: number,
-    friendId: number,
-  ): Promise<FriendRequestEntity> {
-    const creator = await this.findById(userId);
-    const receiver = await this.findById(friendId);
-
-    return await this.friendRequestsRepository.save({ creator, receiver });
-  }
-
-  async getFriends(userId: number): Promise<FriendRequestEntity[]> {
-    const creator = await this.findById(userId);
-
-    return await this.friendRequestsRepository.findWithRelations({
-      where: [{ creator }, { receiver: creator }],
-      relations: ['creator', 'receiver'],
-    });
-  }
-
-  async getFriendsList(userId: number) {
-    const friendRequests = await this.getFriends(userId);
-
-    if (!friendRequests) return [];
-
-    const friends = friendRequests.map((friendRequest) => {
-      const isUserCreator = userId === friendRequest.creator.id;
-      const friendDetails = isUserCreator
-        ? friendRequest.receiver
-        : friendRequest.creator;
-
-      const { id, firstName, lastName, email } = friendDetails;
-
-      return {
-        id,
-        email,
-        firstName,
-        lastName,
-      };
-    });
-
-    return friends;
   }
 }
